@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>网易云用户动态查询</title>
+    <style>
+        /* 1. 基础样式与全新的高级复合背景 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: radial-gradient(circle at 12% 0%, rgba(177, 245, 220, .55), transparent 30%),
+                        radial-gradient(circle at 86% 8%, rgba(190, 232, 255, .65), transparent 28%),
+                        linear-gradient(160deg, #fff 0%, #f7fcff 45%, #f8fff9 100%);
+            min-height: 100vh;
+            padding: 20px 15px;
+            color: #333;
+        }
+
+        /* 2. 主容器与卡片式UI */
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px); /* 兼容 iOS */
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(160, 190, 210, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* 3. 输入框样式 */
+        .search-group {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.02);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        input:focus {
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(177, 245, 220, 0.6);
+        }
+
+        /* 4. 果冻感浅色系按钮 */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+        .btn:active {
+            transform: scale(0.92); /* 果冻缩放反馈 */
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #b1f5dc 0%, #bee8ff 100%);
+            color: #4a6b7a;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #a8575a;
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 10px;
+        }
+
+        /* 5. 用户信息区块 */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-bottom: 18px;
+            border-bottom: 2px dashed rgba(0, 0, 0, 0.05); /* 分割线 */
+            margin-bottom: 18px;
+        }
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .user-info {
+            flex: 1;
+        }
+        .nickname {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .gender-tag {
+            font-size: 12px;
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+        .gender-2 { background: #ffe3ec; color: #ff5e97; }
+        .gender-1 { background: #e3f2fd; color: #2196f3; }
+        .meta-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .user-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 6. 动态内容列表区块 */
+        .event-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #666;
+            padding-left: 5px;
+            border-left: 4px solid #b1f5dc;
+        }
+        .event-item {
+            background: rgba(255,255,255,0.4);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .event-item:last-child {
+            margin-bottom: 0;
+        }
+        .event-time {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 6px;
+        }
+        .event-msg {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .song-card {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.75);
+            padding: 10px;
+            border-radius: 12px;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .song-pic {
+            width: 46px;
+            height: 46px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .song-detail {
+            flex: 1;
+            overflow: hidden;
+        }
+        .song-name {
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .song-artist {
+            font-size: 11px;
+            color: #777;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 状态提示 */
+        .tip-msg {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="search-group">
+            <input type="number" id="uidInput" placeholder="请输入网易云用户ID">
+            <button class="btn btn-primary" onclick="fetchEvents()">查询</button>
+        </div>
+    </div>
+
+    <div id="mainContentCard" class="card hidden">
+        <div class="user-profile">
+            <img id="userAvatar" class="avatar" src="" alt="头像">
+            <div class="user-info">
+                <div class="nickname">
+                    <span id="userNickname">-</span>
+                    <span id="userGender" class="gender-tag"></span>
+                </div>
+                <div class="meta-text">ID: <span id="userIdTxt">-</span></div>
+                <div class="meta-text">IP属地: <span id="userIp">-</span></div>
+            </div>
+            <div class="user-actions">
+                <button class="btn btn-primary btn-sm" onclick="fetchEvents()">更新</button>
+                <button class="btn btn-danger btn-sm" onclick="clearUserData()">删除</button>
+            </div>
+        </div>
+
+        <div class="event-title">最新动态</div>
+        <div id="eventList"></div>
+    </div>
+
+    <div id="statusTip" class="tip-msg">请输入用户 ID 开始查询</div>
+</div>
+
+<script>
+    const API_BASE = "https://api-enhanced-292o.onrender.com";
+    const STORAGE_KEY = "saved_netease_uid";
+
+    // 页面加载时自动读取缓存进行查询
+    window.onload = function() {
+        const savedUid = localStorage.getItem(STORAGE_KEY);
+        if (savedUid) {
+            document.getElementById('uidInput').value = savedUid;
+            fetchEvents(savedUid);
+        }
+    }
+
+    // 获取动态数据
+    async function fetchEvents(targetUid) {
+        const uid = targetUid || document.getElementById('uidInput').value.trim();
+        if (!uid) return alert('请输入有效的用户 ID');
+
+        showTip('正在加载中，请稍候...');
+
+        try {
+            const response = await fetch(`${API_BASE}/user/event?uid=${uid}&limit=10`);
+            const data = await response.json();
+
+            if (data.code === 200 && data.events && data.events.length > 0) {
+                // 自动保存至 localStorage
+                localStorage.setItem(STORAGE_KEY, uid);
+                
+                // 显现并渲染整合大卡片
+                document.getElementById('mainContentCard').classList.remove('hidden');
+                renderUserProfile(data.events[0].user, data.events[0].ipLocation);
+                renderEventList(data.events);
+                
+                showTip(''); 
+            } else {
+                showTip(data.events?.length === 0 ? '该用户近期没有发布动态' : '查询失败，未找到该用户');
+                document.getElementById('mainContentCard').classList.add('hidden');
+            }
+        } catch (error) {
+            console.error(error);
+            showTip('网络请求出错，请检查接口或重试');
+            document.getElementById('mainContentCard').classList.add('hidden');
+        }
+    }
+
+    // 填充用户信息
+    function renderUserProfile(user, ipLocation) {
+        document.getElementById('userAvatar').src = user.avatarUrl;
+        document.getElementById('userNickname').innerText = user.nickname;
+        document.getElementById('userIdTxt').innerText = user.userId;
+        document.getElementById('userIp').innerText = ipLocation?.location || "未知";
+
+        // 性别标签 (1:男, 2:女, 0:保密)
+        const genderEl = document.getElementById('userGender');
+        genderEl.className = 'gender-tag'; 
+        if (user.gender === 1) {
+            genderEl.innerText = '♂';
+            genderEl.classList.add('gender-1');
+        } else if (user.gender === 2) {
+            genderEl.innerText = '♀';
+            genderEl.classList.add('gender-2');
+        } else {
+            genderEl.innerText = '保密';
+        }
+    }
+
+    // 填充动态列表
+    function renderEventList(events) {
+        const listContainer = document.getElementById('eventList');
+        listContainer.innerHTML = ''; 
+
+        events.forEach(item => {
+            let innerData = {};
+            try { innerData = JSON.parse(item.json); } catch(e) { console.error("JSON解析失败"); }
+
+            const eventItem = document.createElement('div');
+            eventItem.className = 'event-item';
+
+            // 时间格式化
+            const date = new Date(item.eventTime);
+            const timeStr = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+            // 生成音乐卡片
+            let songHtml = '';
+            if (innerData.song) {
+                const song = innerData.song;
+                const artistName = song.artists ? song.artists.map(a => a.name).join('/') : '未知歌手';
+                songHtml = `
+                    <div class="song-card">
+                        <img class="song-pic" src="${song.album?.picUrl || ''}" alt="cover">
+                        <div class="song-detail">
+                            <div class="song-name">${song.name}</div>
+                            <div class="song-artist">${artistName} - ${song.album?.name || ''}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            eventItem.innerHTML = `
+                <div class="event-time">${timeStr}</div>
+                <div class="event-msg">${innerData.msg || '分享音乐'}</div>
+                ${songHtml}
+            `;
+            listContainer.appendChild(eventItem);
+        });
+    }
+
+    // 删除按钮逻辑
+    function clearUserData() {
+        if (confirm('确定要清除保存的用户ID并重置页面吗？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('uidInput').value = '';
+            document.getElementById('mainContentCard').classList.add('hidden');
+            showTip('请输入用户 ID 开始查询');
+        }
+    }
+
+    // 提示信息处理
+    function showTip(msg) {
+        const tip = document.getElementById('statusTip');
+        tip.innerText = msg;
+        msg ? tip.classList.remove('hidden') : tip.classList.add('hidden');
+    }
+</script>
+</body>
+</html>
